@@ -1,4 +1,4 @@
-# KarmaOpsAI: Conversational Insights
+# InsightAI: Conversational Insights
 
 KarmaOpsAI is a conversational agent built to provide detailed insights into organizational data using PostgreSQL, LangChain, OpenAI GPT, and Streamlit. The application allows users to query the database and visualize the results interactively. It generates SQL queries based on user inputs and displays results in various formats, including tables and visualizations.
 
