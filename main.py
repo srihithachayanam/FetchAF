@@ -1,295 +1,326 @@
 import streamlit as st
 from sqlalchemy import create_engine, text, inspect
-import pandas as pd
-import plotly.express as px
-from dotenv import load_dotenv
+from sqlalchemy.sql.schema import Table
+from langchain_community.utilities.sql_database import SQLDatabase
 import os
-import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.llms import HuggingFacePipeline
-from huggingface_hub import hf_hub_download
+from dotenv import load_dotenv
+import pandas as pd
 import time
-import hashlib
-from functools import lru_cache
+import cohere  # Direct Cohere import
+import re
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Database Connection
-def get_db_connection():
+# Set page config
+st.set_page_config(layout="wide", page_title="FetchAF", page_icon=":bar_chart:")
+
+# Initialize loading status placeholders
+db_status = st.empty()
+
+# Environment variables for database with fallbacks
+db_user = os.getenv("DB_USER", "postgres")
+db_password = os.getenv("DB_PASSWORD", "delusional")
+db_host = os.getenv("DB_HOST", "localhost")
+db_port = os.getenv("DB_PORT", "5432")
+db_name = os.getenv("DB_NAME", "postgres")
+
+# Connect to PostgreSQL using SQLAlchemy
+def get_db_engine():
     try:
-        db_user = os.getenv('DB_USER')
-        db_password = os.getenv('DB_PASSWORD')
-        db_host = os.getenv('DB_HOST')
-        db_port = os.getenv('DB_PORT')
-        db_name = os.getenv('DB_NAME')
-        
-        db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-        engine = create_engine(db_url)
+        db_status.info("Connecting to database...")
+        connection_string = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        engine = create_engine(connection_string, pool_pre_ping=True, pool_recycle=3600)
+        db_status.success("Database connected!")
+        time.sleep(0.5)
+        db_status.empty()
         return engine
     except Exception as e:
-        st.error(f"Database Connection Error: {e}")
+        db_status.error(f"Database connection error: {str(e)}")
         return None
 
-# Get Database Schema
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_db_schema():
-    engine = get_db_connection()
-    if not engine:
-        return "Could not connect to database to extract schema"
-    
-    schema_info = []
-    inspector = inspect(engine)
-    
-    for table_name in inspector.get_table_names():
-        columns = inspector.get_columns(table_name)
-        col_info = [f"{col['name']} ({col['type']})" for col in columns]
-        schema_info.append(f"Table: {table_name}\nColumns: {', '.join(col_info)}")
-    
-    return "\n\n".join(schema_info)
+# Get database engine
+engine = get_db_engine()
+if engine:
+    db = SQLDatabase(engine)
+else:
+    st.error("Failed to establish database connection. Please check your connection settings.")
 
-# Execute SQL Query with caching
-@st.cache_data(ttl=300)  # Cache for 5 minutes
-def execute_sql_query(query_with_params):
-    query, params = query_with_params
-    engine = get_db_connection()
+# Get schema information
+@st.cache_data(ttl=3600)
+def get_simplified_schema():
     if not engine:
-        return None
+        return {}
+        
+    try:
+        tables_info = {}
+        schema = "public"
+        
+        # Use SQLAlchemy's inspect to get table information
+        inspector = inspect(engine)
+        tables = inspector.get_table_names(schema='public')
+        
+        for table in tables:
+            columns = []
+            for col in inspector.get_columns(table, schema='public'):
+                columns.append((col['name'], str(col['type'])))
+            tables_info[table] = columns
+        
+        return {"public": tables_info}
+    except Exception as e:
+        st.warning(f"Error getting schema: {str(e)}")
+        return {"public": {}}
 
+# Execute SQL query
+def run_query(sql_query):
+    if not engine:
+        return []
+        
     try:
         with engine.connect() as connection:
-            result = connection.execute(text(query), params)
-            columns = result.keys()
-            rows = result.fetchall()
-            return pd.DataFrame(rows, columns=columns)
+            # Execute the query
+            result_proxy = connection.execute(text(sql_query)) 
+            # Get column names (keys) from the result proxy
+            columns = list(result_proxy.keys())
+            # Fetch all rows
+            results = result_proxy.fetchall()
+            
+            if not results:
+                return []
+                
+            # Convert list of Row objects to list of dictionaries
+            return [dict(zip(columns, row)) for row in results]
     except Exception as e:
-        st.error(f"Query Execution Error: {e}")
-        return None
+        st.error(f"Query failed: {str(e)}")
+        return []
 
-# Load LangChain-compatible HF pipeline
-@st.cache_resource
-def load_langchain_llm():
-    model_name =  "patrickNLP/Graphix-3B"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-    pipe = pipeline(
-        "text2text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_length=256,
-        num_beams=5,
-        early_stopping=True
-    )
-    return HuggingFacePipeline(pipeline=pipe)
-
-# LangChain version of SQL generation
-def generate_sql_query(natural_language, db_schema):
-    try:
-        llm = load_langchain_llm()
-
-        prompt = PromptTemplate(
-            input_variables=["schema", "question"],
-            template="""
-Given the following database schema:
-
-{schema}
-
-Translate the following natural language question into a valid SQL query:
-
-Question: {question}
-SQL:
-""",
-        )
-
-        chain = LLMChain(llm=llm, prompt=prompt)
-
-        response = chain.run({
-            "schema": db_schema,
-            "question": natural_language
-        })
-
-        # Clean SQL
-        sql_query = response.strip()
-        if "SELECT" in sql_query:
-            sql_query = sql_query[sql_query.find("SELECT"):]
-        if ";" in sql_query:
-            sql_query = sql_query[:sql_query.rfind(";")+1]
-
-        return sql_query
-    except Exception as e:
-        st.error(f"LangChain SQL generation failed: {e}")
-        return None
-
-# Visualization Function
-def create_visualization(df, graph_type, x_column=None, y_column=None):
-    if df is None or df.empty:
-        return None
-
-    graph_mapping = {
-        "Bar Chart": px.bar,
-        "Line Chart": px.line,
-        "Scatter Plot": px.scatter,
-        "Pie Chart": px.pie,
-        "Boxplot": px.box,
-        "Area Chart": px.area,
-        "Histogram": px.histogram
-    }
-
-    # If columns aren't specified, try to determine appropriate ones
-    if x_column is None:
-        x_column = df.columns[0] if len(df.columns) > 0 else None
-    if y_column is None and graph_type != "Pie Chart" and graph_type != "Histogram":
-        numeric_cols = df.select_dtypes(include=['number']).columns
-        y_column = numeric_cols[0] if len(numeric_cols) > 0 else None
-
-    try:
-        if graph_type == "Pie Chart":
-            if x_column and y_column:
-                return px.pie(df, names=x_column, values=y_column, title=f"{graph_type}")
-            return None
-        elif graph_type == "Histogram":
-            if x_column:
-                return px.histogram(df, x=x_column, title=f"{graph_type}")
-            return None
-        else:
-            if x_column and y_column:
-                return graph_mapping[graph_type](
-                    df, 
-                    x=x_column, 
-                    y=y_column, 
-                    title=f"{graph_type}"
-                )
-            return None
-    except Exception as e:
-        st.error(f"Visualization Error: {e}")
-        return None
-
-def main():
-    st.set_page_config(layout="wide", page_title="Natural Language to SQL")
-
-    # Sidebar for query history
-    st.sidebar.title("Query History")
-    if "query_history" not in st.session_state:
-        st.session_state.query_history = []
-        st.session_state.query_results = {}
-
-    for i, query in enumerate(st.session_state.query_history):
-        if st.sidebar.button(f"{query[:30]}...", key=f"history_{i}"):
-            st.session_state.current_nl_query = query
-            st.session_state.current_sql = st.session_state.query_results.get(query, {}).get('sql', '')
-
-    # App Header
-    st.title("Natural Language to SQL Dashboard")
-    st.write("Enter your question about the data, and the application will convert it to SQL, retrieve the data, and display visualizations.")
-
-    # Get database schema for context
-    db_schema = get_db_schema()
+# Improved SQL generation function with better quoting and proper capitalization
+def generate_sql_query(question, tables_info, timeout=15):
+    # Default table name for fallback
+    table_name = "f1drivers_dataset"  # Default table
     
-    # Only show schema in debug mode
-    if st.sidebar.checkbox("Show Database Schema", False):
-        st.sidebar.code(db_schema)
+    # Get schema information for the prompt
+    schema_info = ""
+    all_identifiers = set()  # Track all table and column names for quoting
+    
+    # Get sample data for the prompt to show correct values
+    sample_values = ""
+    try:
+        if engine:
+            with engine.connect() as conn:
+                # Get unique nationalities from the database
+                nationality_query = 'SELECT DISTINCT "Nationality" FROM "f1drivers_dataset" LIMIT 10;'
+                nationalities = [row[0] for row in conn.execute(text(nationality_query)).fetchall()]
+                if nationalities:
+                    sample_values = "Sample Nationality values in the database: " + ", ".join([f"'{n}'" for n in nationalities])
+    except Exception as e:
+        # If we can't get sample values, provide a generic message about capitalization
+        sample_values = "Note: Nationality values in the database are properly capitalized (e.g., 'British', 'Dutch', 'Italian')"
+    
+    for schema, tables in tables_info.items():
+        if schema == "public" and tables:
+            for table, columns in tables.items():
+                all_identifiers.add(table)
+                schema_info += f"Table: {table}\n"
+                columns_list = []
+                for name, type_info in columns:
+                    all_identifiers.add(name)
+                    columns_list.append(f'{name}')
+                schema_info += f"Columns: {', '.join(columns_list)}\n\n"
+    
+    # Check if API key is set
+    api_key = os.getenv("COHERE_API_KEY", "").strip()
+    if not api_key:
+        st.error("Cohere API key not found in .env file. Please add COHERE_API_KEY=your_key to your .env file (without spaces around =).")
+        return f'SELECT * FROM "{table_name}" LIMIT 10;'
+    
+    try:
+        # Create a direct cohere client
+        co = cohere.Client(api_key)
+        
+        # Create a simple, direct prompt with PostgreSQL specific instructions
+        prompt = f"""Generate a PostgreSQL query to answer this question: "{question}"
 
-    # Natural Language Input
-    st.subheader("Ask a Question")
-    natural_language_input = st.text_area(
-        "Enter your question:", 
-        value=st.session_state.get("current_nl_query", ""), 
-        height=100,
-        placeholder="E.g., Show me the total sales by region"
-    )
+Database Schema:
+{schema_info}
 
-    if st.button("Generate & Run Query"):
-        if natural_language_input:
-            with st.spinner("Generating SQL and fetching results..."):
-                # Generate SQL query
-                sql_query = generate_sql_query(natural_language_input, db_schema)
+CRITICAL FORMATTING RULES FOR POSTGRESQL:
+1. Every column name and table name MUST always be enclosed in double quotes (")
+2. Example: SELECT "Driver" FROM "f1drivers_dataset" WHERE "Driver" = 'Max Verstappen';
+3. String values and literal values must be in single quotes (')
+4. Return ONLY the raw SQL query without any explanations, markdown, or code blocks.
+
+IMPORTANT INFORMATION ABOUT THE DATA:
+- All text values are case-sensitive and properly capitalized in the database
+- Driver names are stored as "Max Verstappen" (not "max verstappen")
+- Country names are stored with proper capitalization: "Italy", "Netherlands", "Germany" (not lowercase)
+- {sample_values}
+
+Your query:"""
+
+        # Call the Cohere API directly
+        response = co.chat(
+            message=prompt,
+            model="command",
+            temperature=0.2
+        )
+        
+        # Get the response text
+        sql_query = response.text.strip()
+        
+        # Clean up the response to extract only the SQL
+        if "```sql" in sql_query:
+            # Extract code from markdown code block
+            start = sql_query.find("```sql") + 6
+            end = sql_query.find("```", start)
+            if end != -1:
+                sql_query = sql_query[start:end].strip()
+        elif "```" in sql_query:
+            # Extract code from markdown code block (without language)
+            start = sql_query.find("```") + 3
+            end = sql_query.find("```", start)
+            if end != -1:
+                sql_query = sql_query[start:end].strip()
+        
+        # If we have a SELECT statement, make sure we extract just that
+        if "SELECT" in sql_query:
+            select_pos = sql_query.find("SELECT")
+            sql_query = sql_query[select_pos:].strip()
+            
+            # Find last semicolon if there's text after it
+            semicolon_pos = sql_query.rfind(";")
+            if semicolon_pos != -1 and semicolon_pos < len(sql_query) - 1:
+                sql_query = sql_query[:semicolon_pos+1]
+        
+        # Add semicolon if missing
+        if not sql_query.endswith(";"):
+            sql_query += ";"
+            
+        # Fix quote issues
+        sql_query = sql_query.replace("`", "\"")
+        
+        # Post-process to ensure proper quoting of all identifiers
+        # This is crucial for PostgreSQL which requires double quotes for case-sensitive identifiers
+        for identifier in all_identifiers:
+            # Match the identifier as a whole word, without quotes around it
+            pattern = r'\b{}\b(?!")'.format(re.escape(identifier))
+            # Replace with quoted version
+            sql_query = re.sub(pattern, f'"{identifier}"', sql_query, flags=re.IGNORECASE)
+        
+        # Fix cases where we might have accidentally introduced extra quotes ("""column""")
+        while '"""' in sql_query:
+            sql_query = sql_query.replace('"""', '"')
+        
+        # Fix cases where we might have double quotes
+        while '""' in sql_query:
+            sql_query = sql_query.replace('""', '"')
+            
+        # Capitalize common country names properly when they appear in string literals
+        country_capitalization = {
+            "'netherlands'": "'Netherlands'",
+            "'italy'": "'Italy'",
+            "'germany'": "'Germany'",
+            "'france'": "'France'",
+            "'spain'": "'Spain'",
+            "'australia'": "'Australia'",
+            "'belgium'": "'Belgium'",
+            "'brazil'": "'Brazil'",
+            "'finland'": "'Finland'",
+            "'united kingdom'": "'United Kingdom'",
+            "'uk'": "'UK'",
+            "'england'": "'England'"
+        }
+        
+        for lowercase, capitalized in country_capitalization.items():
+            sql_query = sql_query.replace(lowercase, capitalized)
+            
+        return sql_query
+        
+    except Exception as e:
+        st.error(f"Error from Cohere: {str(e)}")
+        st.write("API Key used:", api_key[:4] + "..." + api_key[-4:]) # Show part of key to debug
+        return f'SELECT * FROM "{table_name}" LIMIT 10;'
+
+# Get schema early
+schema = get_simplified_schema()
+
+# Main app UI with sidebar
+with st.sidebar:
+    st.title("Database Explorer")
+    st.write(f"Connected to: {db_host}/{db_name}")
+    
+    if schema and "public" in schema and schema["public"]:
+        st.subheader("Available Tables")
+        for table_name, columns in schema["public"].items():
+            with st.expander(f"📊 {table_name}"):
+                # Display the column names
+                st.write("**Columns:**")
+                for col in columns:
+                    st.write(f"- {col[0]} ({col[1]})")
                 
-                if sql_query:
-                    st.session_state.current_nl_query = natural_language_input
-                    st.session_state.current_sql = sql_query
-                    
-                    # Add to history if not already present
-                    if natural_language_input not in st.session_state.query_history:
-                        st.session_state.query_history.append(natural_language_input)
-                    
-                    # Create a unique key for caching
-                    query_hash = hashlib.md5(sql_query.encode()).hexdigest()
-                    
-                    # Execute query
-                    results = execute_sql_query((sql_query, {}))
-                    
-                    # Store in session state
-                    if natural_language_input not in st.session_state.query_results:
-                        st.session_state.query_results[natural_language_input] = {}
-                    
-                    st.session_state.query_results[natural_language_input]['sql'] = sql_query
-                    st.session_state.query_results[natural_language_input]['data'] = results
-                    
-                    # Force reload to show results
-                    st.experimental_rerun()
-                else:
-                    st.error("Failed to generate SQL query from your question.")
-        else:
-            st.warning("Please enter a question first.")
+                # Add a button to preview the table
+                if st.button(f"Preview {table_name}", key=f"preview_{table_name}"):
+                    try:
+                        query = f"SELECT * FROM {table_name} LIMIT 5;"
+                        with engine.connect() as conn:
+                            result = conn.execute(text(query))
+                            df = pd.DataFrame(result.fetchall(), columns=result.keys())
+                            st.dataframe(df, use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Error previewing table: {str(e)}")
+    else:
+        st.warning("No tables found or schema information unavailable.")
 
-    # Display current SQL query and results if available
-    if hasattr(st.session_state, 'current_sql') and st.session_state.current_sql:
-        sql_query = st.session_state.current_sql
+# Main content area
+st.title("FetchAF")
+
+# Question input
+question = st.text_input("Enter your question about your data:", placeholder="e.g., Show top customers by volume")
+
+if st.button("Generate Report", type="primary"):
+    if not question:
+        st.warning("Please enter a question first.")
+    else:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
         
-        st.subheader("Generated SQL Query")
-        st.code(sql_query, language="sql")
+        # Update progress
+        status_text.text("Generating SQL query...")
+        progress_bar.progress(25)
         
-        # Get results if available
-        current_query = st.session_state.get("current_nl_query", "")
-        results = None
+        # Generate SQL
+        sql_query = generate_sql_query(question, schema)
+        progress_bar.progress(75)
         
-        if current_query in st.session_state.query_results:
-            results = st.session_state.query_results[current_query].get('data')
-        
-        if results is not None and not results.empty:
-            st.subheader("Query Results")
-            st.dataframe(results)
+        if sql_query:
+            st.subheader("SQL Query")
+            st.code(sql_query, language="sql")
             
-            # Visualization options
-            st.subheader("Visualization")
-            col1, col2, col3 = st.columns(3)
+            status_text.text("Executing query...")
+            progress_bar.progress(85)
             
-            with col1:
-                graph_type = st.selectbox(
-                    "Select chart type:", 
-                    ["Bar Chart", "Line Chart", "Scatter Plot", "Pie Chart", 
-                     "Boxplot", "Area Chart", "Histogram"]
-                )
+            results = run_query(sql_query)
+            progress_bar.progress(100)
+            status_text.text("Done!")
+            time.sleep(0.5)
+            status_text.empty()
             
-            with col2:
-                x_column = st.selectbox("Select X-axis column:", results.columns)
-            
-            with col3:
-                numeric_cols = results.select_dtypes(include=['number']).columns.tolist()
-                if not numeric_cols:
-                    numeric_cols = results.columns.tolist()
-                y_column = st.selectbox("Select Y-axis column (for numeric charts):", numeric_cols) if graph_type != "Histogram" else None
-            
-            fig = create_visualization(results, graph_type, x_column, y_column)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("Could not create visualization with the selected options.")
+            if results:
+                st.subheader("Results")
+                df = pd.DataFrame(results)
+                st.dataframe(df, use_container_width=True)
                 
-            # Export options
-            if st.button("Export to CSV"):
-                csv = results.to_csv(index=False)
+                # Add CSV download option
+                csv = df.to_csv(index=False)
                 st.download_button(
-                    label="Download CSV",
-                    data=csv,
-                    file_name=f"query_results_{int(time.time())}.csv",
-                    mime="text/csv",
+                    "Download CSV",
+                    csv,
+                    f"query_results_{int(time.time())}.csv",
+                    "text/csv"
                 )
-        elif results is not None:
-            st.info("Query executed successfully, but returned no results.")
-
-if __name__ == "__main__":
-    main()
+            else:
+                st.info("Query returned no results. Try rephrasing your question.")
+        else:
+             # Clear progress if SQL generation failed
+             progress_bar.empty()
+             status_text.empty()

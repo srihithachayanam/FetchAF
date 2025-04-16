@@ -1,13 +1,12 @@
-streamlit>=1.22.0
-pandas>=1.5.3
-plotly>=5.13.1
-python-dotenv>=1.0.0
-SQLAlchemy>=2.0.0
-torch>=2.0.0
-transformers>=4.28.0
-datasets>=2.12.0
-langchain>=0.0.267
-langchain-openai>=0.0.2
-psycopg2-binary>=2.9.6
-huggingface_hub>=0.15.1
-sentencepiece>=0.1.99 
+streamlit
+pandas
+sqlalchemy
+psycopg2-binary # Or the appropriate PostgreSQL driver
+langchain
+langchain-community # For HuggingFacePipeline and SQLDatabase
+langchain-experimental # Needed for SQLDatabaseChain
+langchain-huggingface
+transformers # For Hugging Face models/pipelines
+torch # Or tensorflow - needed by transformers
+sentencepiece # Often required by T5 models
+python-dotenv # Optional: for loading environment variables from a .env file
