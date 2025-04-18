@@ -128,6 +128,7 @@ CRITICAL FORMATTING RULES FOR POSTGRESQL:
 2. Example: SELECT "Driver" FROM "f1drivers_dataset" WHERE "Driver" = 'Max Verstappen';
 3. String values and literal values must be in single quotes (')
 4. Return ONLY the raw SQL query without any explanations, markdown, or code blocks.
+5. The coulmn name are case-sensitive.Make sure not to change them.
 
 IMPORTANT INFORMATION ABOUT THE DATA:
 - All text values are case-sensitive and properly capitalized in the database
