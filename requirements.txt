@@ -10,3 +10,4 @@ transformers # For Hugging Face models/pipelines
 torch # Or tensorflow - needed by transformers
 sentencepiece # Often required by T5 models
 python-dotenv # Optional: for loading environment variables from a .env file
+cohere
