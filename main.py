@@ -6,19 +6,17 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 import time
-import cohere  # Direct Cohere import
+import cohere  
 import re
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Set page config
+
 st.set_page_config(layout="wide", page_title="FetchAF", page_icon=":bar_chart:")
 
-# Initialize loading status placeholders
+
 db_status = st.empty()
 
-# Environment variables for database with fallbacks
 db_user = os.getenv("DB_USER", "postgres")
 db_password = os.getenv("DB_PASSWORD", "delusional")
 db_host = os.getenv("DB_HOST", "localhost")
@@ -39,7 +37,7 @@ def get_db_engine():
         db_status.error(f"Database connection error: {str(e)}")
         return None
 
-# Get database engine
+
 engine = get_db_engine()
 if engine:
     db = SQLDatabase(engine)
@@ -56,7 +54,6 @@ def get_simplified_schema():
         tables_info = {}
         schema = "public"
         
-        # Use SQLAlchemy's inspect to get table information
         inspector = inspect(engine)
         tables = inspector.get_table_names(schema='public')
         
@@ -78,9 +75,7 @@ def run_query(sql_query):
         
     try:
         with engine.connect() as connection:
-            # Execute the query
             result_proxy = connection.execute(text(sql_query)) 
-            # Get column names (keys) from the result proxy
             columns = list(result_proxy.keys())
             # Fetch all rows
             results = result_proxy.fetchall()
@@ -88,34 +83,19 @@ def run_query(sql_query):
             if not results:
                 return []
                 
-            # Convert list of Row objects to list of dictionaries
             return [dict(zip(columns, row)) for row in results]
     except Exception as e:
         st.error(f"Query failed: {str(e)}")
         return []
 
-# Improved SQL generation function with better quoting and proper capitalization
 def generate_sql_query(question, tables_info, timeout=15):
-    # Default table name for fallback
-    table_name = "f1drivers_dataset"  # Default table
+    table_name = "f1drivers_dataset" # default
     
-    # Get schema information for the prompt
     schema_info = ""
-    all_identifiers = set()  # Track all table and column names for quoting
+    all_identifiers = set() 
     
     # Get sample data for the prompt to show correct values
     sample_values = ""
-    try:
-        if engine:
-            with engine.connect() as conn:
-                # Get unique nationalities from the database
-                nationality_query = 'SELECT DISTINCT "Nationality" FROM "f1drivers_dataset" LIMIT 10;'
-                nationalities = [row[0] for row in conn.execute(text(nationality_query)).fetchall()]
-                if nationalities:
-                    sample_values = "Sample Nationality values in the database: " + ", ".join([f"'{n}'" for n in nationalities])
-    except Exception as e:
-        # If we can't get sample values, provide a generic message about capitalization
-        sample_values = "Note: Nationality values in the database are properly capitalized (e.g., 'British', 'Dutch', 'Italian')"
     
     for schema, tables in tables_info.items():
         if schema == "public" and tables:
@@ -128,7 +108,6 @@ def generate_sql_query(question, tables_info, timeout=15):
                     columns_list.append(f'{name}')
                 schema_info += f"Columns: {', '.join(columns_list)}\n\n"
     
-    # Check if API key is set
     api_key = os.getenv("COHERE_API_KEY", "").strip()
     if not api_key:
         st.error("Cohere API key not found in .env file. Please add COHERE_API_KEY=your_key to your .env file (without spaces around =).")
@@ -165,24 +144,21 @@ Your query:"""
             temperature=0.2
         )
         
-        # Get the response text
+        ################################
         sql_query = response.text.strip()
-        
-        # Clean up the response to extract only the SQL
+        ################################
+
         if "```sql" in sql_query:
-            # Extract code from markdown code block
             start = sql_query.find("```sql") + 6
             end = sql_query.find("```", start)
             if end != -1:
                 sql_query = sql_query[start:end].strip()
         elif "```" in sql_query:
-            # Extract code from markdown code block (without language)
             start = sql_query.find("```") + 3
             end = sql_query.find("```", start)
             if end != -1:
                 sql_query = sql_query[start:end].strip()
         
-        # If we have a SELECT statement, make sure we extract just that
         if "SELECT" in sql_query:
             select_pos = sql_query.find("SELECT")
             sql_query = sql_query[select_pos:].strip()
@@ -199,23 +175,16 @@ Your query:"""
         # Fix quote issues
         sql_query = sql_query.replace("`", "\"")
         
-        # Post-process to ensure proper quoting of all identifiers
-        # This is crucial for PostgreSQL which requires double quotes for case-sensitive identifiers
         for identifier in all_identifiers:
-            # Match the identifier as a whole word, without quotes around it
             pattern = r'\b{}\b(?!")'.format(re.escape(identifier))
-            # Replace with quoted version
             sql_query = re.sub(pattern, f'"{identifier}"', sql_query, flags=re.IGNORECASE)
         
-        # Fix cases where we might have accidentally introduced extra quotes ("""column""")
         while '"""' in sql_query:
             sql_query = sql_query.replace('"""', '"')
         
-        # Fix cases where we might have double quotes
         while '""' in sql_query:
             sql_query = sql_query.replace('""', '"')
             
-        # Capitalize common country names properly when they appear in string literals
         country_capitalization = {
             "'netherlands'": "'Netherlands'",
             "'italy'": "'Italy'",
