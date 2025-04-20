@@ -1,610 +1,3 @@
-# import streamlit as st
-# import hashlib
-
-# # Initialize session state for user data, login status, and page navigation
-# if 'users' not in st.session_state:
-#     st.session_state.users = {}  # Store username: hashed_password
-# if 'logged_in' not in st.session_state:
-#     st.session_state.logged_in = False
-# if 'current_user' not in st.session_state:
-#     st.session_state.current_user = None
-# if 'page' not in st.session_state:
-#     st.session_state.page = 'login'  # Tracks current page: 'login', 'welcome', 'main'
-
-# # Function to hash passwords
-# def hash_password(password):
-#     return hashlib.sha256(password.encode()).hexdigest()
-
-# # Function to display signup form
-# def signup():
-#     st.subheader("Create a New Account")
-#     new_username = st.text_input("New Username")
-#     new_password = st.text_input("New Password", type="password")
-#     confirm_password = st.text_input("Confirm Password", type="password")
-
-#     if st.button("Sign Up"):
-#         if new_username and new_password and confirm_password:
-#             if new_username in st.session_state.users:
-#                 st.error("Username already exists!")
-#             elif new_password != confirm_password:
-#                 st.error("Passwords do not match!")
-#             else:
-#                 st.session_state.users[new_username] = hash_password(new_password)
-#                 st.success("Account created successfully! Please log in.")
-#         else:
-#             st.error("Please fill in all fields!")
-
-# # Function to display login form
-# def login():
-#     st.subheader("Login to Your Account")
-#     username = st.text_input("Username")
-#     password = st.text_input("Password", type="password")
-
-#     if st.button("Login"):
-#         if username in st.session_state.users:
-#             hashed_password = hash_password(password)
-#             if st.session_state.users[username] == hashed_password:
-#                 st.session_state.logged_in = True
-#                 st.session_state.current_user = username
-#                 st.session_state.page = 'welcome'
-#                 st.success(f"Welcome back, {username}!")
-#                 st.rerun()  # Refresh to show welcome page
-#             else:
-#                 st.error("Incorrect password!")
-#         else:
-#             st.error("Username not found!")
-
-# # Function to display welcome page
-# def welcome_page():
-#     st.title(f"Welcome, {st.session_state.current_user}!")
-#     st.write("You have successfully logged in to your account.")
-
-#     col1, col2 = st.columns(2)
-#     with col1:
-#         if st.button("Explore"):
-#             st.session_state.page = 'main'
-#             st.rerun()  # Navigate to main.py page
-#     with col2:
-#         if st.button("Logout"):
-#             st.session_state.logged_in = False
-#             st.session_state.current_user = None
-#             st.session_state.page = 'login'
-#             st.success("You have been logged out.")
-#             st.rerun()  # Refresh to show login/signup page
-
-# # Function to display login/signup page
-# def login_signup_page():
-#     st.title("FetchAF")
-#     tab1, tab2 = st.tabs(["Login", "Signup"])
-#     with tab1:
-#         login()
-#     with tab2:
-#         signup()
-
-# # Main app logic
-# def main():
-#     if not st.session_state.logged_in:
-#         st.session_state.page = 'login'
-#         login_signup_page()
-#     else:
-#         if st.session_state.page == 'welcome':
-#             welcome_page()
-#         elif st.session_state.page == 'main':
-#             # Placeholder for main.py content; actual content will be in pages/main.py
-#             st.title(f"Explore Page for {st.session_state.current_user}")
-#             st.write("This is the main page content from main.py.")
-#             if st.button("Back to Welcome"):
-#                 st.session_state.page = 'welcome'
-#                 st.rerun()
-
-# if __name__ == "__main__":
-#     main()
-
-
-
-
-    
-# import streamlit as st
-# import hashlib
-
-# # Initialize session state for user data and login status
-# if 'users' not in st.session_state:
-#     st.session_state.users = {}  # Store username: hashed_password
-# if 'logged_in' not in st.session_state:
-#     st.session_state.logged_in = False
-# if 'current_user' not in st.session_state:
-#     st.session_state.current_user = None
-
-# # Hide Streamlit's default sidebar for login/signup and welcome pages
-# st.set_page_config(page_title="FetchAF", layout="wide")
-# st.markdown(
-#     """
-#     <style>
-#     [data-testid="stSidebar"] {display: none;}
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
-# # Function to hash passwords
-# def hash_password(password):
-#     return hashlib.sha256(password.encode()).hexdigest()
-
-# # Function to display signup form
-# def signup():
-#     st.subheader("Create a New Account")
-#     new_username = st.text_input("New Username")
-#     new_password = st.text_input("New Password", type="password")
-#     confirm_password = st.text_input("Confirm Password", type="password")
-
-#     if st.button("Sign Up"):
-#         if new_username and new_password and confirm_password:
-#             if new_username in st.session_state.users:
-#                 st.error("Username already exists!")
-#             elif new_password != confirm_password:
-#                 st.error("Passwords do not match!")
-#             else:
-#                 st.session_state.users[new_username] = hash_password(new_password)
-#                 st.success("Account created successfully! Please log in.")
-#         else:
-#             st.error("Please fill in all fields!")
-
-# # Function to display login form
-# def login():
-#     st.subheader("Login to Your Account")
-#     username = st.text_input("Username")
-#     password = st.text_input("Password", type="password")
-
-#     if st.button("Login"):
-#         if username in st.session_state.users:
-#             hashed_password = hash_password(password)
-#             if st.session_state.users[username] == hashed_password:
-#                 st.session_state.logged_in = True
-#                 st.session_state.current_user = username
-#                 st.success(f"Welcome back, {username}!")
-#                 st.rerun()  # Refresh to show welcome page
-#             else:
-#                 st.error("Incorrect password!")
-#         else:
-#             st.error("Username not found!")
-
-# # Function to display welcome page
-# def welcome_page():
-#     st.title(f"Welcome, {st.session_state.current_user}!")
-#     st.write("You have successfully logged in to your account.")
-
-#     # Add FetchAF information
-#     st.markdown("""
-#     ### FetchAF: SQL from Plain English
-#     Query PostgreSQL databases using natural language
-
-#     #### Why FetchAF?
-#     - **Simple**: Ask questions in English, get SQL queries instantly
-#     - **Fast**: Skip the technical barriers to your data
-#     - **Interactive**: Explore your database structure with ease
-#     - **Portable**: Deploy anywhere with Docker
-
-#     #### Quick Start
-#     - `docker-compose up -d`
-#     - Connect to http://localhost:8501
-
-#     #### How It Works
-#     - Connect your PostgreSQL database
-#     - Type your question
-#     - Get results instantly
-
-#     [Get Started](#) | [Documentation](#)
-
-#     **Powered by Cohere AI & Streamlit | [GitHub Repository](#)**
-#     """)
-
-#     col1, col2 = st.columns(2)
-#     with col1:
-#         if st.button("Explore"):
-#             st.write("Debug: Explore button clicked, navigating to main.py")
-#             try:
-#                 st.switch_page("pages/main.py")  # Navigate to main.py
-#             except Exception as e:
-#                 st.error(f"Navigation error: {str(e)}")
-#     with col2:
-#         if st.button("Logout"):
-#             st.session_state.logged_in = False
-#             st.session_state.current_user = None
-#             st.success("You have been logged out.")
-#             st.rerun()  # Refresh to show login/signup page
-
-# # Function to display login/signup page
-# def login_signup_page():
-#     st.title("FetchAF")
-#     tab1, tab2 = st.tabs(["Login", "Signup"])
-#     with tab1:
-#         login()
-#     with tab2:
-#         signup()
-
-# # Main app logic
-# def main():
-#     if not st.session_state.logged_in:
-#         login_signup_page()
-#     else:
-#         welcome_page()
-
-# if __name__ == "__main__":
-#     main()    
-
-
-# import streamlit as st
-# import hashlib
-
-# # Initialize session state for user data and login status
-# if 'users' not in st.session_state:
-#     st.session_state.users = {}  # Store username: hashed_password
-# if 'logged_in' not in st.session_state:
-#     st.session_state.logged_in = False
-# if 'current_user' not in st.session_state:
-#     st.session_state.current_user = None
-
-# # Hide Streamlit's default sidebar for login/signup and welcome pages
-# st.set_page_config(page_title="FetchAF", layout="wide")
-# st.markdown(
-#     """
-#     <style>
-#     [data-testid="stSidebar"] {display: none;}
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
-# # Function to hash passwords
-# def hash_password(password):
-#     return hashlib.sha256(password.encode()).hexdigest()
-
-# # Function to display signup form
-# def signup():
-#     st.subheader("Create a New Account")
-#     new_username = st.text_input("New Username")
-#     new_password = st.text_input("New Password", type="password")
-#     confirm_password = st.text_input("Confirm Password", type="password")
-
-#     if st.button("Sign Up"):
-#         if new_username and new_password and confirm_password:
-#             if new_username in st.session_state.users:
-#                 st.error("Username already exists!")
-#             elif new_password != confirm_password:
-#                 st.error("Passwords do not match!")
-#             else:
-#                 st.session_state.users[new_username] = hash_password(new_password)
-#                 st.success("Account created successfully! Please log in.")
-#         else:
-#             st.error("Please fill in all fields!")
-
-# # Function to display login form
-# def login():
-#     st.subheader("Login to Your Account")
-#     username = st.text_input("Username")
-#     password = st.text_input("Password", type="password")
-
-#     if st.button("Login"):
-#         if username in st.session_state.users:
-#             hashed_password = hash_password(password)
-#             if st.session_state.users[username] == hashed_password:
-#                 st.session_state.logged_in = True
-#                 st.session_state.current_user = username
-#                 st.success(f"Welcome back, {username}!")
-#                 st.rerun()  # Refresh to show welcome page
-#             else:
-#                 st.error("Incorrect password!")
-#         else:
-#             st.error("Username not found!")
-
-# # Function to display welcome page
-# def welcome_page():
-#     st.title(f"Welcome, {st.session_state.current_user}!")
-#     st.write("You have successfully logged in to your account.")
-
-#     # Add FetchAF information
-#     st.markdown("""
-#     ### FetchAF: SQL from Plain English
-#     Query PostgreSQL databases using natural language
-
-#     #### Why FetchAF?
-#     - **Simple**: Ask questions in English, get SQL queries instantly
-#     - **Fast**: Skip the technical barriers to your data
-#     - **Interactive**: Explore your database structure with ease
-#     - **Portable**: Deploy anywhere with Docker
-
-#     #### Quick Start
-#     - `docker-compose up -d`
-#     - Connect to http://localhost:8501
-
-#     #### How It Works
-#     - Connect your PostgreSQL database
-#     - Type your question
-#     - Get results instantly
-
-#     [Get Started](#) | [Documentation](#)
-
-#     **Powered by Cohere AI & Streamlit | [GitHub Repository](#)**
-#     """)
-
-#     col1, col2 = st.columns(2)
-#     with col1:
-#         if st.button("Explore"):
-#             st.write("Debug: Explore button clicked, navigating to main.py")
-#             try:
-#                 st.switch_page("pages/main.py")  # Navigate to main.py
-#             except Exception as e:
-#                 st.error(f"Navigation error: {str(e)}")
-#     with col2:
-#         if st.button("Logout"):
-#             st.session_state.logged_in = False
-#             st.session_state.current_user = None
-#             st.success("You have been logged out.")
-#             st.rerun()  # Refresh to show login/signup page
-
-# # Function to display login/signup page
-# def login_signup_page():
-#     st.title("FetchAF")
-#     tab1, tab2 = st.tabs(["Login", "Signup"])
-#     with tab1:
-#         login()
-#     with tab2:
-#         signup()
-
-# # Main app logic
-# def main():
-#     if not st.session_state.logged_in:
-#         login_signup_page()
-#     else:
-#         welcome_page()
-
-# if __name__ == "__main__":
-#     main()
-
-
-
-# import streamlit as st
-# import hashlib
-
-# # Initialize session state for user data and login status
-# if 'users' not in st.session_state:
-#     st.session_state.users = {}  # Store username: hashed_password
-# if 'logged_in' not in st.session_state:
-#     st.session_state.logged_in = False
-# if 'current_user' not in st.session_state:
-#     st.session_state.current_user = None
-
-# # Hide Streamlit's default sidebar for login/signup and welcome pages
-# st.set_page_config(page_title="FetchAF", layout="wide")
-# st.markdown(
-#     """
-#     <style>
-#     [data-testid="stSidebar"] {display: none;}
-#     .main .block-container {
-#         background: linear-gradient(135deg, #4b0082, #1a1a3d);
-#         background-size: cover;
-#         background-position: center;
-#         background-repeat: no-repeat;
-#         min-height: 100vh;
-#         display: flex;
-#         flex-direction: column;
-#         justify-content: center;
-#         align-items: center;
-#         color: #ffffff;
-#         padding: 2rem;
-#     }
-#     .hero {
-#         background: rgba(0, 0, 0, 0.6);
-#         padding: 2rem;
-#         border-radius: 15px;
-#         text-align: center;
-#         margin-bottom: 2rem;
-#         backdrop-filter: blur(5px);
-#     }
-#     .hero h1 {
-#         font-size: 3em;
-#         color: #e6e6fa;
-#         margin-bottom: 0.5rem;
-#         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-#     }
-#     .hero p {
-#         font-size: 1.2em;
-#         color: #d3d3d3;
-#         margin-bottom: 1.5rem;
-#     }
-#     .section {
-#         background: rgba(255, 255, 255, 0.1);
-#         padding: 1.5rem;
-#         border-radius: 10px;
-#         max-width: 700px;
-#         text-align: left;
-#         margin: 1rem 0;
-#         backdrop-filter: blur(3px);
-#     }
-#     .section h4 {
-#         color: #9370db;
-#         margin-bottom: 1rem;
-#     }
-#     .section ul {
-#         list-style-type: none;
-#         padding-left: 0;
-#     }
-#     .section ul li {
-#         margin-bottom: 0.5rem;
-#         color: #e0e0e0;
-#     }
-#     .section ul li:before {
-#         content: "•";
-#         color: #9370db;
-#         font-weight: bold;
-#         display: inline-block;
-#         width: 1em;
-#         margin-left: -1em;
-#     }
-#     .cta-button {
-#         display: inline-block;
-#         padding: 0.75rem 2rem;
-#         background-color: #9370db;
-#         color: white;
-#         text-decoration: none;
-#         border-radius: 25px;
-#         font-weight: bold;
-#         transition: background-color 0.3s;
-#     }
-#     .cta-button:hover {
-#         background-color: #7b68ee;
-#     }
-#     .links {
-#         text-align: center;
-#         margin-top: 1rem;
-#     }
-#     .links a {
-#         color: #00d4ff;
-#         margin: 0 1rem;
-#         text-decoration: none;
-#         font-weight: bold;
-#     }
-#     .links a:hover {
-#         text-decoration: underline;
-#     }
-#     .powered-by {
-#         text-align: center;
-#         color: #d3d3d3;
-#         font-size: 0.9em;
-#         margin-top: 1rem;
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
-# # Function to hash passwords
-# def hash_password(password):
-#     return hashlib.sha256(password.encode()).hexdigest()
-
-# # Function to display signup form
-# def signup():
-#     st.subheader("Create a New Account")
-#     new_username = st.text_input("New Username")
-#     new_password = st.text_input("New Password", type="password")
-#     confirm_password = st.text_input("Confirm Password", type="password")
-
-#     if st.button("Sign Up"):
-#         if new_username and new_password and confirm_password:
-#             if new_username in st.session_state.users:
-#                 st.error("Username already exists!")
-#             elif new_password != confirm_password:
-#                 st.error("Passwords do not match!")
-#             else:
-#                 st.session_state.users[new_username] = hash_password(new_password)
-#                 st.success("Account created successfully! Please log in.")
-#         else:
-#             st.error("Please fill in all fields!")
-
-# # Function to display login form
-# def login():
-#     st.subheader("Login to Your Account")
-#     username = st.text_input("Username")
-#     password = st.text_input("Password", type="password")
-
-#     if st.button("Login"):
-#         if username in st.session_state.users:
-#             hashed_password = hash_password(password)
-#             if st.session_state.users[username] == hashed_password:
-#                 st.session_state.logged_in = True
-#                 st.session_state.current_user = username
-#                 st.success(f"Welcome back, {username}!")
-#                 st.rerun()
-#             else:
-#                 st.error("Incorrect password!")
-#         else:
-#             st.error("Username not found!")
-
-# # Function to display welcome page
-# def welcome_page():
-#     st.markdown('<div class="hero">', unsafe_allow_html=True)
-#     st.title(f"Welcome, {st.session_state.current_user}!")
-#     st.write(f"You have successfully logged in to your account.")
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     st.markdown('<div class="hero">', unsafe_allow_html=True)
-#     st.markdown("### FetchAF: SQL from Plain English")
-#     st.write("Query PostgreSQL databases using natural language")
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     st.markdown('<div class="section">', unsafe_allow_html=True)
-#     st.markdown('<h4>Why FetchAF?</h4>', unsafe_allow_html=True)
-#     st.markdown("""
-#     <ul>
-#         <li>Simple: Ask questions in English, get SQL queries instantly</li>
-#         <li>Fast: Skip the technical barriers to your data</li>
-#         <li>Interactive: Explore your database structure with ease</li>
-#         <li>Portable: Deploy anywhere with Docker</li>
-#     </ul>
-#     """, unsafe_allow_html=True)
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     st.markdown('<div class="section">', unsafe_allow_html=True)
-#     st.markdown('<h4>Quick Start</h4>', unsafe_allow_html=True)
-#     st.markdown("""
-#     <ul>
-#         <li><span style="color: #32cd32">docker-compose up -d</span></li>
-#         <li>Connect to http://localhost:8501</li>
-#     </ul>
-#     """, unsafe_allow_html=True)
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     st.markdown('<div class="section">', unsafe_allow_html=True)
-#     st.markdown('<h4>How It Works</h4>', unsafe_allow_html=True)
-#     st.markdown("""
-#     <ul>
-#         <li>Connect your PostgreSQL database</li>
-#         <li>Type your question</li>
-#         <li>Get results instantly</li>
-#     </ul>
-#     """, unsafe_allow_html=True)
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     st.markdown('<div class="links">', unsafe_allow_html=True)
-#     st.markdown('[Get Started](#) | [Documentation](#) | [GitHub Repository](#)', unsafe_allow_html=True)
-#     st.markdown('<div class="powered-by">Powered by Cohere AI & Streamlit</div>', unsafe_allow_html=True)
-#     st.markdown('</div>', unsafe_allow_html=True)
-
-#     col1, col2 = st.columns(2)
-#     with col1:
-#         if st.button("Explore", key="explore_button"):
-#             st.write("Debug: Explore button clicked, navigating to main.py")
-#             try:
-#                 st.switch_page("pages/main.py")
-#             except Exception as e:
-#                 st.error(f"Navigation error: {str(e)}")
-#     with col2:
-#         if st.button("Logout", key="logout_button"):
-#             st.session_state.logged_in = False
-#             st.session_state.current_user = None
-#             st.success("You have been logged out.")
-#             st.rerun()
-
-# # Function to display login/signup page
-# def login_signup_page():
-#     st.title("My Streamlit App")
-#     tab1, tab2 = st.tabs(["Login", "Signup"])
-#     with tab1:
-#         login()
-#     with tab2:
-#         signup()
-
-# # Main app logic
-# def main():
-#     if not st.session_state.logged_in:
-#         login_signup_page()
-#     else:
-#         welcome_page()
-
-# if __name__ == "__main__":
-#     main()
-
-
 import streamlit as st
 import hashlib
 
@@ -621,11 +14,233 @@ st.set_page_config(page_title="FetchAF", layout="wide")
 st.markdown(
     """
     <style>
+    /* Hide default sidebar */
     [data-testid="stSidebar"] {display: none;}
+    
+    /* Modern minimalist color palette */
+    :root {
+        --primary-green: #2ecc71;
+        --dark-green: #27ae60;
+        --light-green: rgba(46, 204, 113, 0.1);
+        --accent-green: #46cb8c;
+        --bg-dark: #1e1e2e;
+        --bg-card: #2a2a3a;
+        --text-white: #f8f9fa;
+        --text-light: #bdc3c7;
+        --text-accent: #ecf0f1;
+        --shadow: rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Dark background */
+    .main .block-container {
+        background: var(--bg-dark);
+        color: var(--text-white);
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+    
+    /* Modern typography with white text */
+    h1 {
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-green);
+    }
+    
+    h2, h3 {
+        font-weight: 600;
+        color: var(--primary-green);
+    }
+    
+    p, li {
+        font-weight: 400;
+        color: var(--text-white);
+        line-height: 1.6;
+    }
+    
+    /* Clean buttons */
+    button, .stButton>button {
+        background-color: var(--primary-green) !important;
+        color: var(--bg-dark) !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 500 !important;
+        padding: 0.6rem 1.2rem !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 5px var(--shadow) !important;
+    }
+    
+    button:hover, .stButton>button:hover {
+        background-color: var(--dark-green) !important;
+        box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* Minimal input fields */
+    input[type="text"], input[type="password"], .stTextInput>div>div>input {
+        border: 1px solid #4a4a5a !important;
+        border-radius: 8px !important;
+        padding: 0.8rem 1rem !important;
+        background-color: #2a2a3a !important;
+        color: var(--text-white) !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    input[type="text"]:focus, input[type="password"]:focus, .stTextInput>div>div>input:focus {
+        border-color: var(--primary-green) !important;
+        box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.15) !important;
+    }
+    
+    /* Modern tab interface */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid #4a4a5a;
+        padding-bottom: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        background-color: transparent !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: var(--text-light) !important;
+        font-weight: 500;
+        border: none !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        color: var(--primary-green) !important;
+        border-bottom: 2px solid var(--primary-green) !important;
+        background-color: transparent !important;
+    }
+    
+    /* Status messages */
+    .element-container div[data-testid="stImage"] {
+        background-color: transparent;
+        padding: 0;
+        border-radius: 8px;
+        color: var(--text-white);
+    }
+    
+    /* Clean cards */
+    .card {
+        background-color: var(--bg-card);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border: 1px solid #3a3a4a;
+        box-shadow: 0 4px 20px var(--shadow);
+        transition: transform 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px var(--shadow);
+    }
+    
+    /* Feature list styling */
+    .feature-list {
+        padding-left: 0;
+    }
+    
+    .feature-list li {
+        margin-bottom: 12px;
+        list-style-type: none;
+        position: relative;
+        padding-left: 28px;
+        color: var(--text-white);
+    }
+    
+    .feature-list li:before {
+        content: "✓";
+        color: var(--primary-green);
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+        font-size: 16px;
+    }
+    
+    /* Links styling */
+    a {
+        color: var(--primary-green);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+    
+    a:hover {
+        color: var(--accent-green);
+    }
+    
+    /* Modern footer */
+    .app-footer {
+        text-align: center;
+        margin-top: 3rem;
+        color: var(--text-light);
+        font-size: 0.85rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #3a3a4a;
+    }
+    
+    /* Logo styling */
+    .logo {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: var(--primary-green);
+        margin-bottom: 1rem;
+        letter-spacing: -0.5px;
+    }
+    
+    .logo-accent {
+        color: var(--text-white);
+    }
+    
+    /* Two-column layout */
+    .flex-container {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+        margin: 2rem 0;
+    }
+    
+    .flex-item {
+        flex: 1;
+    }
+    
+    @media (max-width: 768px) {
+        .flex-container {
+            flex-direction: column;
+        }
+    }
+    
+    /* Streamlit native elements */
+    label {
+        color: var(--text-white) !important;
+    }
+    
+    .stAlert > div {
+        color: var(--bg-dark) !important;
+    }
+    
+    /* Code blocks */
+    code {
+        color: var(--primary-green) !important;
+        background-color: #32324a !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
+
+# Function to navigate to main.py
+def navigate_to_main():
+    try:
+        st.switch_page("pages/main.py")
+    except Exception as e:
+        st.error(f"Navigation error: {str(e)}")
 
 # Function to hash passwords
 def hash_password(password):
@@ -634,11 +249,11 @@ def hash_password(password):
 # Function to display signup form
 def signup():
     st.subheader("Create a New Account")
-    new_username = st.text_input("New Username")
-    new_password = st.text_input("New Password", type="password")
-    confirm_password = st.text_input("Confirm Password", type="password")
+    new_username = st.text_input("Username", key="new_username")
+    new_password = st.text_input("Password", type="password", key="new_password")
+    confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password")
 
-    if st.button("Sign Up"):
+    if st.button("Sign Up", key="signup_button"):
         if new_username and new_password and confirm_password:
             if new_username in st.session_state.users:
                 st.error("Username already exists!")
@@ -653,10 +268,10 @@ def signup():
 # Function to display login form
 def login():
     st.subheader("Login to Your Account")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    username = st.text_input("Username", key="username")
+    password = st.text_input("Password", type="password", key="password")
 
-    if st.button("Login"):
+    if st.button("Login", key="login_button"):
         if username in st.session_state.users:
             hashed_password = hash_password(password)
             if st.session_state.users[username] == hashed_password:
@@ -671,46 +286,101 @@ def login():
 
 # Function to display welcome page
 def welcome_page():
-    st.title(f"Welcome, {st.session_state.current_user}!")
-    st.write(f"You have successfully logged in to your account.")
+    # Centered layout
+    col_left, col_center, col_right = st.columns([1, 3, 1])
+    
+    with col_center:
+        # Header with modern design
+        st.markdown('<div class="logo">Fetch<span class="logo-accent">AF</span></div>', unsafe_allow_html=True)
+        st.title(f"Welcome, {st.session_state.current_user}")
+        
+        # Introduction card
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### SQL from Plain English")
+        st.markdown("Query your PostgreSQL database using natural language - eliminate the need to write complex SQL queries.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("### FetchAF: SQL from Plain English")
-    st.write("Query PostgreSQL databases using natural language")
+        # Features card
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("#### Why FetchAF?")
+        st.markdown('<ul class="feature-list">', unsafe_allow_html=True)
+        st.markdown("""
+        <li>Ask questions in plain English, get SQL queries instantly</li>
+        <li>Skip the technical barriers and focus on insights</li>
+        <li>Explore your database structure with an intuitive interface</li>
+        <li>Deploy anywhere with Docker in minutes</li>
+        """, unsafe_allow_html=True)
+        st.markdown('</ul>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Quick Start card
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("#### Quick Start")
+        st.code("docker-compose up -d", language="bash")
+        st.markdown("Connect to http://localhost:8501")
+        
+        # Action button - fixed to use the navigate_to_main function directly
+        if st.button("Explore Now", key="explore_button"):
+            navigate_to_main()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("#### Why FetchAF?")
-    st.markdown("""
-    - Simple: Ask questions in English, get SQL queries instantly
-    - Fast: Skip the technical barriers to your data
-    - Interactive: Explore your database structure with ease
-    - Portable: Deploy anywhere with Docker
-    """)
-
-
-    st.markdown("**[Get Started](#) | [Documentation](#) | [GitHub Repository](#)**")
-    st.write("Powered by Cohere AI & Streamlit")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Explore", key="explore_button"):
-            try:
-                st.switch_page("pages/main.py")
-            except Exception as e:
-                st.error(f"Navigation error: {str(e)}")
-    with col2:
-        if st.button("Logout", key="logout_button"):
+        # Links and footer
+        st.markdown("""
+        <div class="app-footer">
+            <p><a href="#">Documentation</a> · <a href="#">GitHub</a> · <a href="#">Support</a></p>
+            <p>Powered by Cohere AI & Streamlit</p>
+            <button style="background: transparent !important; color: var(--text-light) !important; box-shadow: none !important; font-size: 0.8rem !important; padding: 0 !important;" onclick="handleLogout()">Logout</button>
+        </div>
+        <script>
+        function handleLogout() {
+            document.getElementById('logout_button').click();
+        }
+        </script>
+        """, unsafe_allow_html=True)
+        
+        # Hidden logout button
+        if st.button("Logout", key="logout_button", type="primary"):
             st.session_state.logged_in = False
             st.session_state.current_user = None
-            st.success("You have been logged out.")
             st.rerun()
 
 # Function to display login/signup page
 def login_signup_page():
-    st.title("My Streamlit App")
-    tab1, tab2 = st.tabs(["Login", "Signup"])
-    with tab1:
-        login()
-    with tab2:
-        signup()
+    # Centered layout
+    col_left, col_center, col_right = st.columns([1, 3, 1])
+    
+    with col_center:
+        # Modern header
+        st.markdown('<div class="logo">Fetch<span class="logo-accent">AF</span></div>', unsafe_allow_html=True)
+        
+        # Introduction 
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### Transform Database Queries")
+        st.markdown("Use natural language to query your PostgreSQL database without writing a single line of SQL.")
+        
+        st.markdown("#### How It Works")
+        st.markdown("""
+        1. Connect to your PostgreSQL database
+        2. Ask questions in plain English
+        3. Get instant results with generated SQL
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Auth card
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        tab1, tab2 = st.tabs(["Login", "Sign Up"])
+        with tab1:
+            login()
+        with tab2:
+            signup()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Footer
+        st.markdown("""
+        <div class="app-footer">
+            <p>Powered by Cohere AI & Streamlit</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Main app logic
 def main():
