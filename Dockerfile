@@ -1,18 +1,45 @@
-FROM python:3.11-slim
+# FROM python:3.11-slim
 
+# WORKDIR /app
+
+# # Copy requirements file
+# COPY requirements.txt .
+
+# # Install dependencies
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # Copy application code
+# COPY . .
+
+# # Expose Streamlit port
+# EXPOSE 8501
+
+# # Command to run the application
+# CMD ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"] 
+# Use an official Python runtime as a parent image
+FROM python:3.12-slim
+
+# Set working directory in the container
 WORKDIR /app
 
-# Copy requirements file
+# Copy the requirements file into the container
 COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy the entire project directory into the container
 COPY . .
 
-# Expose Streamlit port
+# Expose the port Streamlit runs on (default 8501)
 EXPOSE 8501
 
-# Command to run the application
-CMD ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"] 
+# Environment variables (optional, adjust based on .env)
+ENV DB_USER=postgres
+ENV DB_PASSWORD=1234
+ENV DB_HOST=localhost
+ENV DB_PORT=5432
+ENV DB_NAME=agiledb
+
+# Run the Streamlit app with explicit app.py
+CMD ["streamlit", "run", "/app/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
