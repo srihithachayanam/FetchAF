@@ -1,13 +1,13 @@
 streamlit
 pandas
 sqlalchemy
-psycopg2-binary # Or the appropriate PostgreSQL driver
+psycopg2-binary 
 langchain
-langchain-community # For HuggingFacePipeline and SQLDatabase
-langchain-experimental # Needed for SQLDatabaseChain
+langchain-community 
+langchain-experimental 
 langchain-huggingface
-transformers # For Hugging Face models/pipelines
-torch # Or tensorflow - needed by transformers
-sentencepiece # Often required by T5 models
-python-dotenv # Optional: for loading environment variables from a .env file
-cohere
+transformers 
+torch 
+sentencepiece 
+python-dotenv 
+cohere 
