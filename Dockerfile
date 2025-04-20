@@ -42,4 +42,4 @@ ENV DB_PORT=5432
 ENV DB_NAME=agiledb
 
 # Run the Streamlit app with explicit app.py
-CMD ["streamlit", "run", "/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
