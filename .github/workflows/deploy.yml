@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - ".github/**"
+      - "!.github/workflows/deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          # Create .env file for deployment
+          cat > .env << EOL
+          DB_USER=${DB_USER}
+          DB_PASSWORD=${DB_PASSWORD}
+          DB_HOST=${DB_HOST}
+          DB_PORT=${DB_PORT}
+          DB_NAME=${DB_NAME}
+          COHERE_API_KEY=${COHERE_API_KEY}
+          EOL
+
+          # Copy files to server
+          rsync -avz --exclude='.git' --exclude='.github' --exclude='.venv' --exclude='.dist' \
+            --exclude='__pycache__' --exclude='.DS_Store' ./ ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/
+
+          # Deploy on server
+          ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && \
+            docker-compose down && \
+            docker-compose up -d --build"
